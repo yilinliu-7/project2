@@ -11,6 +11,39 @@ int crossValidation(vector<vector<double>> data, vector<int> list, int feature) 
     int accuracy = rand();
 }
 
+void search(vector<vector<double>> data) {
+    vector<int> setOfFeatures;
+
+    //checks i column starting from the first feature
+    for (int i = 1; i < data.at(i).size(); ++i) {
+        cout << "On the " << i << "th level of the search tree" << endl;
+        int featureToAdd;
+        int bestSoFarAccuracy = 0;
+
+        for (int j = 1; j < data.at(j).size(); ++j) {
+            //check if there the feature is already added
+            for (int k = 0; k < setOfFeatures.size(); ++k) {
+                if (j == k) {
+                    ++k;
+                    break;
+                }
+            }
+            cout << "--Considering adding the " << j << " feature" << endl;
+            
+            int accuracy = crossValidation(data, setOfFeatures, j+1);
+
+            if (accuracy > bestSoFarAccuracy) {
+                bestSoFarAccuracy = accuracy;
+                featureToAdd = j;
+            }
+        }
+        
+        setOfFeatures.push_back(featureToAdd);
+        cout << "On level " << i << " I added feature " << featureToAdd << " to the current set";
+    }
+
+}
+
 int main() {
     ifstream dataFile;
     vector<vector<double>> data;
