@@ -8,8 +8,21 @@
 
 using namespace std;
 
-int crossValidation(vector<vector<double>> data, vector<int> list, int feature) {
-    int numCorrectClassified = 0;
+double crossValidation(vector<vector<double>> data, vector<int> list, int feature) {
+    double numCorrectClassified = 0;
+    list.push_back(feature);
+    //modify local data vector
+    for (int i = 1; i < data.at(i).size(); ++i) {
+        for (int j = 0; j < list.size(); ++j) {
+            //feature is not included in the list
+            if (list.at(j) != i) {
+                //zero out that feature from each row
+                for (int k = 0; k < data.size(); ++k) {
+                    data.at(k).at(list.at(j)) = 0;
+                }
+            }
+        }
+    }
 
     for (int i = 0; i < data.size(); ++i) {
         //store the label and features in different place
@@ -18,14 +31,14 @@ int crossValidation(vector<vector<double>> data, vector<int> list, int feature) 
         double label = data.at(i).at(0);
         double nnLabel = 0;
         
-        int nnDistance = 1000000;
-        int nnLocation = 1000000;
+        double nnDistance = 1000000;
+        double nnLocation = 1000000;
+        
         for (int j = 1; j < data.size(); ++j) {
-            cout << "Ask if " << i << " is nearest neighbour with " << j << endl;
             //neighbour is not yourself
             if (j != i) {
                 //euclidean distance calculation
-                //take columns of object, subtract with its corresponding columns of j
+                //take columns of object, subtract with its corresponding columns of j and square it
                 int distance = 0;
                 for (int k = 0; k < objectToClassify.size(); ++k) {
                     //sum all squares for each feature
@@ -36,6 +49,7 @@ int crossValidation(vector<vector<double>> data, vector<int> list, int feature) 
                 if (distance < nnDistance) {
                     nnDistance = distance;
                     nnLocation = j;
+                    // cout << nnLocation << " " << data.at(nnLocation).at(0) << endl;
                     nnLabel = data.at(nnLocation).at(0);
                 }
             }
@@ -44,6 +58,8 @@ int crossValidation(vector<vector<double>> data, vector<int> list, int feature) 
             ++numCorrectClassified;
         }
     }
+
+    //cout << numCorrectClassified / data.size() << " " << numCorrectClassified << " " << data.size() << endl;
     return numCorrectClassified / data.size();
 
 }
@@ -55,7 +71,7 @@ void search(vector<vector<double>> data) {
     for (int i = 1; i < data.at(i).size(); ++i) {
         cout << "On the " << i << "th level of the search tree" << endl;
         int featureToAdd;
-        int bestSoFarAccuracy = 0;
+        double bestSoFarAccuracy = 0;
         bool availableFeature = true;
 
         for (int j = 1; j < data.at(j).size(); ++j) {
@@ -65,7 +81,6 @@ void search(vector<vector<double>> data) {
                 //if feature is in the feature list, mark that this feature already exist
                 if (j == setOfFeatures.at(k)) {
                     availableFeature = false;
-                    //cout << j << " " << setOfFeatures.at(k) << " " << featureToAdd << endl;
                     break;
                 } 
             }
@@ -75,8 +90,8 @@ void search(vector<vector<double>> data) {
                 cout << "--Considering adding the " << j << " feature" << endl;
             }
             
-            int accuracy = crossValidation(data, setOfFeatures, j+1);
-
+            double accuracy = crossValidation(data, setOfFeatures, j);
+            
             if (accuracy > bestSoFarAccuracy && availableFeature) {
                 bestSoFarAccuracy = accuracy;
                 featureToAdd = j;
