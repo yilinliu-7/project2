@@ -19,29 +19,36 @@ void search(vector<vector<double>> data) {
         cout << "On the " << i << "th level of the search tree" << endl;
         int featureToAdd;
         int bestSoFarAccuracy = 0;
+        bool availableFeature = true;
 
         for (int j = 1; j < data.at(j).size(); ++j) {
-            //check if there the feature is already added
+            //check if the feature is already added
             for (int k = 0; k < setOfFeatures.size(); ++k) {
-                if (j == k) {
-                    ++k;
+                availableFeature = true;
+                //if feature is in the feature list, mark that this feature already exist
+                if (j == setOfFeatures.at(k)) {
+                    availableFeature = false;
+                    //cout << j << " " << setOfFeatures.at(k) << " " << featureToAdd << endl;
                     break;
-                }
+                } 
             }
-            cout << "--Considering adding the " << j << " feature" << endl;
+
+            //the feature we're checking right now isn't in the list
+            if (availableFeature) {
+                cout << "--Considering adding the " << j << " feature" << endl;
+            }
             
             int accuracy = crossValidation(data, setOfFeatures, j+1);
 
-            if (accuracy > bestSoFarAccuracy) {
+            if (accuracy > bestSoFarAccuracy && availableFeature) {
                 bestSoFarAccuracy = accuracy;
                 featureToAdd = j;
             }
         }
-        
+ 
         setOfFeatures.push_back(featureToAdd);
-        cout << "On level " << i << " I added feature " << featureToAdd << " to the current set";
+        cout << "On level " << i << " I added feature " << featureToAdd << " to the current set" << endl;
     }
-
 }
 
 int main() {
@@ -68,10 +75,9 @@ int main() {
         while (ss >> value) {  
             rows.push_back(value);
         }
-
         data.push_back(rows);
     }
-
+    
     search(data);
     
     return 0;
