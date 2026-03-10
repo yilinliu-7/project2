@@ -4,11 +4,48 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <cmath>
 
 using namespace std;
 
 int crossValidation(vector<vector<double>> data, vector<int> list, int feature) {
-    int accuracy = rand();
+    int numCorrectClassified = 0;
+
+    for (int i = 0; i < data.size(); ++i) {
+        //store the label and features in different place
+        vector<double> objectToClassify = data.at(i);
+        objectToClassify.erase(objectToClassify.begin());
+        double label = data.at(i).at(0);
+        double nnLabel = 0;
+        
+        int nnDistance = 1000000;
+        int nnLocation = 1000000;
+        for (int j = 1; j < data.size(); ++j) {
+            cout << "Ask if " << i << " is nearest neighbour with " << j << endl;
+            //neighbour is not yourself
+            if (j != i) {
+                //euclidean distance calculation
+                //take columns of object, subtract with its corresponding columns of j
+                int distance = 0;
+                for (int k = 0; k < objectToClassify.size(); ++k) {
+                    //sum all squares for each feature
+                    distance += (objectToClassify.at(k) - data.at(j).at(k+1)) * (objectToClassify.at(k) - data.at(j).at(k+1));
+                }
+                distance = sqrt(distance);
+                //set closest neighbour
+                if (distance < nnDistance) {
+                    nnDistance = distance;
+                    nnLocation = j;
+                    nnLabel = data.at(nnLocation).at(0);
+                }
+            }
+        }
+        if (label == nnLabel) {
+            ++numCorrectClassified;
+        }
+    }
+    return numCorrectClassified / data.size();
+
 }
 
 void search(vector<vector<double>> data) {
