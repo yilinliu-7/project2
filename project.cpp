@@ -8,31 +8,38 @@
 
 using namespace std;
 
-double crossValidation(vector<vector<double>> data, vector<int> list, int feature, int mode) {
+double crossValidation(vector<vector<double>> actualSet, vector<int> list) {
     double numCorrectClassified = 0;
-    if (mode == 1) {
-        list.push_back(feature);
-    }
-    else {
-        for (int i = 1; i < list.size(); ++i) {
-            if (i == feature) {
-                list.erase(list.begin() + i);
-                break;
-            }
-        }
-    }
-    //modify local data vector
-    for (int i = 1; i < data.at(i).size(); ++i) {
+    vector<vector<double>> data;
+
+    // for (int i = 1; i < list.size(); i++) {
+    //     for (int j = 0; j < data.size(); ++j) {
+    //         data.push_back( actualSet.at(j).at(list.at(i)) );
+    //     }
+            
+    // }
+    for (int i = 0; i < actualSet.size(); ++i) {
+        vector<double> features;
+        features.push_back(actualSet.at(i).at(0));
         for (int j = 0; j < list.size(); ++j) {
-            //feature is not included in the list
-            if (list.at(j) != i) {
-                //zero out that feature from each row
-                for (int k = 0; k < data.size(); ++k) {
-                    data.at(k).at(list.at(j)) = 0;
-                }
-            }
+            features.push_back(actualSet.at(i).at(list.at(j)));
         }
+        data.push_back(features);
     }
+
+    // //modify local data vector
+    // for (int i = 1; i < data.at(i).size(); ++i) {
+    //     for (int j = 0; j < list.size(); ++j) {
+    //         //feature is not included in the list
+    //         if (list.at(j) != i) {
+    //             //zero out that feature from each row
+    //             for (int k = 0; k < data.size(); ++k) {
+    //                 data.at(k).at(list.at(j)) = 0;
+    //             }
+    //         }
+    //     }
+    // }
+
     for (int i = 0; i < data.size(); ++i) {
         //store the label and features in different place
         vector<double> objectToClassify = data.at(i);
@@ -47,7 +54,7 @@ double crossValidation(vector<vector<double>> data, vector<int> list, int featur
             if (j != i) {
                 //euclidean distance calculation
                 //take columns of object, subtract with its corresponding columns of j and square it
-                int distance = 0;
+                double distance = 0;
                 for (int k = 0; k < objectToClassify.size(); ++k) {
                     //sum all squares for each feature
                     distance += (objectToClassify.at(k) - data.at(j).at(k+1)) * (objectToClassify.at(k) - data.at(j).at(k+1));
@@ -71,10 +78,10 @@ double crossValidation(vector<vector<double>> data, vector<int> list, int featur
 double forwardSelection (vector<vector<double>> data, vector<int> &setOfFeatures, vector<int> &bestSetOfFeatures, double &bestSoFarAccuracy) {
     double bestAccuracy = 0;
     //checks i column starting from the first feature
-    for (int i = 1; i < data.at(i).size(); ++i) {
+    for (int i = 1; i < data.at(0).size(); ++i) {
         int featureToAdd;
         bool availableFeature = true;
-        for (int j = 1; j < data.at(j).size(); ++j) {
+        for (int j = 1; j < data.at(0).size(); ++j) {
             //check if the feature is already added
             for (int k = 0; k < setOfFeatures.size(); ++k) {
                 availableFeature = true;
@@ -84,11 +91,13 @@ double forwardSelection (vector<vector<double>> data, vector<int> &setOfFeatures
                     break;
                 } 
             }
-            double accuracy = crossValidation(data, setOfFeatures, j, 1);
+            vector<int> list = setOfFeatures;
+            list.push_back(j);
+            double accuracy = crossValidation(data, list);
             if (availableFeature) {
                 cout << "\t Using feature(s) {" << j << "} accuracy is " << accuracy * 100 << "%" << endl;
             }
-            if (accuracy > bestSoFarAccuracy && availableFeature) {
+            if (accuracy >= bestSoFarAccuracy && availableFeature) {
                 bestSoFarAccuracy = accuracy;
                 featureToAdd = j;
             }
@@ -122,29 +131,27 @@ double backwardElimination (vector<vector<double>> data, vector<int> &setOfFeatu
         setOfFeatures.push_back(i);
     }
     //checks i column starting from the first feature
-    for (int i = 1; i < data.at(i).size(); ++i) {
+    for (int i = 1; i < data.at(0).size(); ++i) {
         int featureToDelete;
-        bool availableFeature = true;
 
+        //j = the number of the feature
         for (int j = 0; j < setOfFeatures.size(); ++j) {
-            //check if the feature is already added
-            for (int k = 0; k < setOfFeatures.size(); ++k) {
-                availableFeature = true;
-                //feature hasn't been taken out yet
-                if (j + 1 == setOfFeatures.at(k)) {
+            vector<int> list = setOfFeatures;
+            for (int k = 0; k < list.size(); ++k) {
+                if (k == j) {
+                    list.erase(list.begin() + k);
                     break;
                 }
-                //if feature is not in the feature list, mark that this feature is already taken out
-                else if (j + 1 != setOfFeatures.at(k) && k == setOfFeatures.size() - 1) {
-                    availableFeature = false;
-                    break;
-                } 
             }
-            double accuracy = crossValidation(data, setOfFeatures, j, 2);
-            if (availableFeature) {
-                cout << "\t Taking out feature(s) {" << setOfFeatures.at(j) << "} accuracy is " << accuracy * 100 << "%" << endl;
+            double accuracy;
+            if (list.size() != 0) {
+                accuracy = crossValidation(data, list);
             }
-            if (accuracy >= bestSoFarAccuracy && availableFeature) {
+
+
+            cout << "\t Taking out feature(s) {" << setOfFeatures.at(j) << "} accuracy is " << accuracy * 100 << "%" << endl;
+            
+            if (accuracy >= bestSoFarAccuracy) {
                 bestSoFarAccuracy = accuracy;
                 featureToDelete = setOfFeatures.at(j);
             }
@@ -155,6 +162,7 @@ double backwardElimination (vector<vector<double>> data, vector<int> &setOfFeatu
                 setOfFeatures.erase(setOfFeatures.begin() + j);
                 break;
             }
+
         }
         //keep track of where the accuracy goes down
         if (bestSoFarAccuracy < bestAccuracy) {
@@ -219,6 +227,8 @@ int main() {
     string dataPt;
 
     dataFile.open("CS170_Small_DataSet__86.csv");
+    //dataFile.open("SanityCheck_DataSet__1.csv");
+    //dataFile.open("SanityCheckDataSet__2.csv");
     //dataFile.open("CS170_Large_DataSet__33.csv");
 
     if (!dataFile.is_open()) {
