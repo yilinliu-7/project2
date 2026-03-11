@@ -8,9 +8,19 @@
 
 using namespace std;
 
-double crossValidation(vector<vector<double>> data, vector<int> list, int feature) {
+double crossValidation(vector<vector<double>> data, vector<int> list, int feature, int mode) {
     double numCorrectClassified = 0;
-    list.push_back(feature);
+    if (mode == 1) {
+        list.push_back(feature);
+    }
+    else {
+        for (int i = 1; i < list.size(); ++i) {
+            if (i == feature) {
+                list.erase(list.begin() + i);
+                break;
+            }
+        }
+    }
     //modify local data vector
     for (int i = 1; i < data.at(i).size(); ++i) {
         for (int j = 0; j < list.size(); ++j) {
@@ -23,14 +33,12 @@ double crossValidation(vector<vector<double>> data, vector<int> list, int featur
             }
         }
     }
-
     for (int i = 0; i < data.size(); ++i) {
         //store the label and features in different place
         vector<double> objectToClassify = data.at(i);
         objectToClassify.erase(objectToClassify.begin());
         double label = data.at(i).at(0);
         double nnLabel = 0;
-        
         double nnDistance = 1000000;
         double nnLocation = 1000000;
         
@@ -49,7 +57,6 @@ double crossValidation(vector<vector<double>> data, vector<int> list, int featur
                 if (distance < nnDistance) {
                     nnDistance = distance;
                     nnLocation = j;
-                    // cout << nnLocation << " " << data.at(nnLocation).at(0) << endl;
                     nnLabel = data.at(nnLocation).at(0);
                 }
             }
@@ -58,22 +65,15 @@ double crossValidation(vector<vector<double>> data, vector<int> list, int featur
             ++numCorrectClassified;
         }
     }
-    //cout << numCorrectClassified / data.size() << " " << numCorrectClassified << " " << data.size() << endl;
     return numCorrectClassified / data.size();
 }
 
-void search(vector<vector<double>> data) {
-    vector<int> setOfFeatures;
-    vector<int> bestSetOfFeatures;
+double forwardSelection (vector<vector<double>> data, vector<int> &setOfFeatures, vector<int> &bestSetOfFeatures, double &bestSoFarAccuracy) {
     double bestAccuracy = 0;
-    
-    cout << "Beginning Search." << endl << endl;
     //checks i column starting from the first feature
     for (int i = 1; i < data.at(i).size(); ++i) {
         int featureToAdd;
-        double bestSoFarAccuracy = 0;
         bool availableFeature = true;
-
         for (int j = 1; j < data.at(j).size(); ++j) {
             //check if the feature is already added
             for (int k = 0; k < setOfFeatures.size(); ++k) {
@@ -84,15 +84,78 @@ void search(vector<vector<double>> data) {
                     break;
                 } 
             }
-            
-            double accuracy = crossValidation(data, setOfFeatures, j);
-            cout << "\t Using feature(s) {" << j << "} accuracy is " << accuracy * 100 << "%" << endl;
+            double accuracy = crossValidation(data, setOfFeatures, j, 1);
+            if (availableFeature) {
+                cout << "\t Using feature(s) {" << j << "} accuracy is " << accuracy * 100 << "%" << endl;
+            }
             if (accuracy > bestSoFarAccuracy && availableFeature) {
                 bestSoFarAccuracy = accuracy;
                 featureToAdd = j;
             }
         }
         setOfFeatures.push_back(featureToAdd);
+        //keep track of where the accuracy goes down
+        if (bestSoFarAccuracy < bestAccuracy) {
+            cout << "\n(Warning, Accuracy has decreased! Continuing search in case of local maxima)"<< endl;
+        }
+        else {
+            bestAccuracy = bestSoFarAccuracy;
+            bestSetOfFeatures = setOfFeatures;
+        }
+        cout << "\nFeature set {";
+        for (int j = 0; j < setOfFeatures.size(); ++j) {
+            cout << setOfFeatures.at(j);
+            if (j < setOfFeatures.size() - 1) {
+                cout << ",";
+            }
+        }
+        cout << "} was best, accuracy is " << bestSoFarAccuracy * 100 << "%" << endl << endl;
+        bestSoFarAccuracy = 0;
+    }
+    return bestAccuracy;
+}
+
+double backwardElimination (vector<vector<double>> data, vector<int> &setOfFeatures, vector<int> &bestSetOfFeatures, double &bestSoFarAccuracy) {
+    double bestAccuracy = 0;
+    //add all features
+    for (int i = 1; i < data.at(0).size(); ++i) {
+        setOfFeatures.push_back(i);
+    }
+    //checks i column starting from the first feature
+    for (int i = 1; i < data.at(i).size(); ++i) {
+        int featureToDelete;
+        bool availableFeature = true;
+
+        for (int j = 0; j < setOfFeatures.size(); ++j) {
+            //check if the feature is already added
+            for (int k = 0; k < setOfFeatures.size(); ++k) {
+                availableFeature = true;
+                //feature hasn't been taken out yet
+                if (j + 1 == setOfFeatures.at(k)) {
+                    break;
+                }
+                //if feature is not in the feature list, mark that this feature is already taken out
+                else if (j + 1 != setOfFeatures.at(k) && k == setOfFeatures.size() - 1) {
+                    availableFeature = false;
+                    break;
+                } 
+            }
+            double accuracy = crossValidation(data, setOfFeatures, j, 2);
+            if (availableFeature) {
+                cout << "\t Taking out feature(s) {" << setOfFeatures.at(j) << "} accuracy is " << accuracy * 100 << "%" << endl;
+            }
+            if (accuracy >= bestSoFarAccuracy && availableFeature) {
+                bestSoFarAccuracy = accuracy;
+                featureToDelete = setOfFeatures.at(j);
+            }
+        }
+        //delete feature from the list
+        for (int j = 0; j < setOfFeatures.size(); ++j) {
+            if (setOfFeatures.at(j) == featureToDelete) {
+                setOfFeatures.erase(setOfFeatures.begin() + j);
+                break;
+            }
+        }
         //keep track of where the accuracy goes down
         if (bestSoFarAccuracy < bestAccuracy) {
             cout << "\n(Warning, Accuracy has decreased! Continuing search in case of local maxima)" << endl;
@@ -110,12 +173,38 @@ void search(vector<vector<double>> data) {
             }
         }
         cout << "} was best, accuracy is " << bestSoFarAccuracy * 100 << "%" << endl << endl;
-        // cout << "On level " << i << " I added feature " << featureToAdd << " to the current set" << endl;
+        bestSoFarAccuracy = 0;
     }
+    return bestAccuracy;
+}
+
+void search(vector<vector<double>> data) {
+    vector<int> setOfFeatures;
+    vector<int> bestSetOfFeatures;
+    double bestAccuracy = 0;
+    double accuracy = 0;
+    vector<int> finalBestSetOfFeatures;
+    
+    cout << "Beginning Search." << endl << endl;
+    double bestSetAccuracyForward = forwardSelection(data, setOfFeatures, bestSetOfFeatures, accuracy);
+    finalBestSetOfFeatures = bestSetOfFeatures;
+    setOfFeatures.clear();
+    bestSetOfFeatures.clear();
+    
+    double bestSetAccuracyBackward = backwardElimination(data, setOfFeatures, bestSetOfFeatures, accuracy);
+    //set the best accuracy 
+    if (bestSetAccuracyForward > bestSetAccuracyBackward) {
+        bestAccuracy = bestSetAccuracyForward;
+    }
+    else {
+        bestAccuracy = bestSetAccuracyBackward;
+        finalBestSetOfFeatures = bestSetOfFeatures;
+    }
+
     cout << "Finished search!! The best feature subset is {";
-    for (int i = 0; i < bestSetOfFeatures.size(); ++i) {
-        cout << bestSetOfFeatures.at(i);
-        if (i < bestSetOfFeatures.size() - 1) {
+    for (int i = 0; i < finalBestSetOfFeatures.size(); ++i) {
+        cout << finalBestSetOfFeatures.at(i);
+        if (i < finalBestSetOfFeatures.size() - 1) {
             cout << ",";
         }
     }
