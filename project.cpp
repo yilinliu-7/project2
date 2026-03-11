@@ -58,18 +58,18 @@ double crossValidation(vector<vector<double>> data, vector<int> list, int featur
             ++numCorrectClassified;
         }
     }
-
     //cout << numCorrectClassified / data.size() << " " << numCorrectClassified << " " << data.size() << endl;
     return numCorrectClassified / data.size();
-
 }
 
 void search(vector<vector<double>> data) {
     vector<int> setOfFeatures;
-
+    vector<int> bestSetOfFeatures;
+    double bestAccuracy = 0;
+    
+    cout << "Beginning Search." << endl << endl;
     //checks i column starting from the first feature
     for (int i = 1; i < data.at(i).size(); ++i) {
-        cout << "On the " << i << "th level of the search tree" << endl;
         int featureToAdd;
         double bestSoFarAccuracy = 0;
         bool availableFeature = true;
@@ -84,23 +84,42 @@ void search(vector<vector<double>> data) {
                     break;
                 } 
             }
-
-            //the feature we're checking right now isn't in the list
-            if (availableFeature) {
-                cout << "--Considering adding the " << j << " feature" << endl;
-            }
             
             double accuracy = crossValidation(data, setOfFeatures, j);
-            
+            cout << "\t Using feature(s) {" << j << "} accuracy is " << accuracy * 100 << "%" << endl;
             if (accuracy > bestSoFarAccuracy && availableFeature) {
                 bestSoFarAccuracy = accuracy;
                 featureToAdd = j;
             }
         }
- 
         setOfFeatures.push_back(featureToAdd);
-        cout << "On level " << i << " I added feature " << featureToAdd << " to the current set" << endl;
+        //keep track of where the accuracy goes down
+        if (bestSoFarAccuracy < bestAccuracy) {
+            cout << "\n(Warning, Accuracy has decreased! Continuing search in case of local maxima)" << endl;
+        }
+        else {
+            bestAccuracy = bestSoFarAccuracy;
+            bestSetOfFeatures = setOfFeatures;
+        }
+
+        cout << "\nFeature set {";
+        for (int j = 0; j < setOfFeatures.size(); ++j) {
+            cout << setOfFeatures.at(j);
+            if (j < setOfFeatures.size() - 1) {
+                cout << ",";
+            }
+        }
+        cout << "} was best, accuracy is " << bestSoFarAccuracy * 100 << "%" << endl << endl;
+        // cout << "On level " << i << " I added feature " << featureToAdd << " to the current set" << endl;
     }
+    cout << "Finished search!! The best feature subset is {";
+    for (int i = 0; i < bestSetOfFeatures.size(); ++i) {
+        cout << bestSetOfFeatures.at(i);
+        if (i < bestSetOfFeatures.size() - 1) {
+            cout << ",";
+        }
+    }
+    cout << "}, which has an accuracy of " << bestAccuracy * 100 << "%" << endl;
 }
 
 int main() {
@@ -111,6 +130,7 @@ int main() {
     string dataPt;
 
     dataFile.open("CS170_Small_DataSet__86.csv");
+    //dataFile.open("CS170_Large_DataSet__33.csv");
 
     if (!dataFile.is_open()) {
         return -1;
