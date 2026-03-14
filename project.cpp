@@ -77,6 +77,8 @@ double crossValidation(vector<vector<double>> actualSet, vector<int> list) {
 
 double forwardSelection (vector<vector<double>> data, vector<int> &setOfFeatures, vector<int> &bestSetOfFeatures, double &bestSoFarAccuracy) {
     double bestAccuracy = 0;
+    double accuracy = crossValidation(data,setOfFeatures);
+    cout << "Running nearest neighbor with no features, using \"leave-one-out\" evaluation, I get an accuracy of " << accuracy * 100 << "%" << endl << endl;
     //checks i column starting from the first feature
     for (int i = 1; i < data.at(0).size(); ++i) {
         int featureToAdd;
@@ -130,6 +132,8 @@ double backwardElimination (vector<vector<double>> data, vector<int> &setOfFeatu
     for (int i = 1; i < data.at(0).size(); ++i) {
         setOfFeatures.push_back(i);
     }
+    double accuracy = crossValidation(data,setOfFeatures);
+    cout << "Running nearest neighbor with all features, using \"leave-one-out\" evaluation, I get an accuracy of " << accuracy * 100 << "%" << endl << endl;
     //checks i column starting from the first feature
     for (int i = 1; i < data.at(0).size(); ++i) {
         int featureToDelete;
@@ -143,11 +147,8 @@ double backwardElimination (vector<vector<double>> data, vector<int> &setOfFeatu
                     break;
                 }
             }
-            double accuracy;
-            if (list.size() != 0) {
-                accuracy = crossValidation(data, list);
-            }
 
+            accuracy = crossValidation(data, list);
 
             cout << "\t Taking out feature(s) {" << setOfFeatures.at(j) << "} accuracy is " << accuracy * 100 << "%" << endl;
             
@@ -191,28 +192,27 @@ void search(vector<vector<double>> data) {
     vector<int> bestSetOfFeatures;
     double bestAccuracy = 0;
     double accuracy = 0;
-    vector<int> finalBestSetOfFeatures;
-    
+    int choice;
+
+    cout << "Type the number of the algorithm you want to run." << endl;
+    cout << "1. Forward selection\n2. Backward selection" << endl;
+    cin >> choice;
+    cin.clear();
+    cout << "This dataset has " << data.at(0).size() - 1 << " features (not including the class attribute), with " << data.size() << " instances." << endl << endl;
     cout << "Beginning Search." << endl << endl;
-    double bestSetAccuracyForward = forwardSelection(data, setOfFeatures, bestSetOfFeatures, accuracy);
-    finalBestSetOfFeatures = bestSetOfFeatures;
-    setOfFeatures.clear();
-    bestSetOfFeatures.clear();
     
-    double bestSetAccuracyBackward = backwardElimination(data, setOfFeatures, bestSetOfFeatures, accuracy);
     //set the best accuracy 
-    if (bestSetAccuracyForward > bestSetAccuracyBackward) {
-        bestAccuracy = bestSetAccuracyForward;
+    if (choice == 1) {
+        bestAccuracy = forwardSelection(data, setOfFeatures, bestSetOfFeatures, accuracy);
     }
-    else {
-        bestAccuracy = bestSetAccuracyBackward;
-        finalBestSetOfFeatures = bestSetOfFeatures;
+    else if (choice == 2) {
+        bestAccuracy =  backwardElimination(data, setOfFeatures, bestSetOfFeatures, accuracy);
     }
 
     cout << "Finished search!! The best feature subset is {";
-    for (int i = 0; i < finalBestSetOfFeatures.size(); ++i) {
-        cout << finalBestSetOfFeatures.at(i);
-        if (i < finalBestSetOfFeatures.size() - 1) {
+    for (int i = 0; i < bestSetOfFeatures.size(); ++i) {
+        cout << bestSetOfFeatures.at(i);
+        if (i < bestSetOfFeatures.size() - 1) {
             cout << ",";
         }
     }
